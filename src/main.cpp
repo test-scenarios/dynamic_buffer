@@ -7,8 +7,6 @@ namespace program {
     namespace websocket = beast::websocket;
     using tcp = net::ip::tcp;
 
-    using namespace std::literals;
-
     int
     run()
     {

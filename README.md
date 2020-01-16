@@ -1,10 +1,10 @@
-# beast-softphone-problem
+# Asio Dynamic Buffer
 
 ## Intention
 
-To recreate the problem reported here:
+A small project to test approaches to unifying the handling of
+the asio concepts of DynamicBuffer_v1 and DynamicBuffer_v2
 
-https://github.com/boostorg/beast/issues/1798
 
 ## Required toolchain
 
@@ -16,7 +16,7 @@ https://github.com/ruslo/polly
 
 in which case you can invoke cmake with:
 
-`cmake -DCMAKE_TOOLCHAIN_FILE=<POLLY_DIR>/cxx17.cmake -H<SRC_DIR> -B<BUILD_DIR>`
+`cmake -DCMAKE_TOOLCHAIN_FILE=<POLLY_DIR>/cxx11.cmake -H<SRC_DIR> -B<BUILD_DIR>`
 
 Where:
 
