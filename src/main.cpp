@@ -12,33 +12,15 @@ namespace program {
     int
     run()
     {
-        auto host = "cpclientapi.softphone.com"s, endpoint = "/counterpath/socketapi/v1"s, port = "9002"s;
-        net::io_context ioc;
-        ssl::context ctx{ssl::context::tls_client};
-        websocket::stream<ssl::stream<tcp::socket>> m_websocket{ioc, ctx};
+//        std::string data;
+//        auto sv1 = string_buffer_v1(data);
+//        auto sv2 = string_buffer_v2(data);
 
-        tcp::resolver resolver{ioc};
+        std::cout << "string_buffer_v1 is dynamic_buffer_v1? " << std::boolalpha << net::is_dynamic_buffer_v1<string_buffer_v1>::value << '\n';
+        std::cout << "string_buffer_v1 is dynamic_buffer_v2? " << std::boolalpha << net::is_dynamic_buffer_v2<string_buffer_v1>::value << '\n';
 
-        const auto resolved = resolver.resolve(host, port);
-
-        boost::asio::connect(m_websocket.next_layer().next_layer(), resolved.begin(), resolved.end());
-
-        m_websocket.next_layer().handshake(ssl::stream_base::client);
-        m_websocket.handshake(host, endpoint);
-
-        std::string request = "GET/bringToFront\n"
-                              "User-Agent: TestApp\n"
-                              "Transaction-ID: AE26f998027\n"
-                              "Content-Type: application/xml\n"
-                              "Content-Length: 0";
-        m_websocket.write(boost::asio::buffer(request));
-
-        beast::flat_buffer m_resBuffer;
-        m_websocket.read(m_resBuffer);
-
-        std::cout << beast::buffers_to_string(m_resBuffer.data()) << std::endl;
-
-        m_websocket.close(websocket::close_code::normal);
+        std::cout << "string_buffer_v2 is dynamic_buffer_v1? " << std::boolalpha << net::is_dynamic_buffer_v1<string_buffer_v2>::value << '\n';
+        std::cout << "string_buffer_v2 is dynamic_buffer_v2? " << std::boolalpha << net::is_dynamic_buffer_v2<string_buffer_v2>::value << '\n';
 
         return 0;
     }

@@ -7,7 +7,7 @@ HunterGate(
         SHA1 "ca19f3769e6c80cfdd19d8b12ba5102c27b074e0"
 )
 
-project(BestSoftphoneProblem)
+project(DynamicBuffer)
 
 hunter_add_package(Boost COMPONENTS system)
 hunter_add_package(OpenSSL)
