@@ -80,7 +80,11 @@ template<class BufferV2Type>
 struct dynamic_buffer_handle<BufferV2Type, use_dynamic_buffer_v2_semantics>
 {
     dynamic_buffer_handle(BufferV2Type& dyn_buf)
-    : dyn_buf_(std::addressof(dyn_buf))
+        : dyn_buf_(std::addressof(dyn_buf))
+    {}
+
+    dynamic_buffer_handle(BufferV2Type&& dyn_buf)
+        : dyn_buf_(std::addressof(dyn_buf))
     {}
 
     std::size_t
@@ -99,14 +103,33 @@ struct dynamic_buffer_handle<BufferV2Type, use_dynamic_buffer_v2_semantics>
     BufferV2Type* dyn_buf_;
 };
 
-template<class Buffer>
-void test_write(Buffer&& buf, std::string const& data)
+template <class...Whatever>
+std::size_t
+dynamic_write_one(dynamic_buffer_handle<Whatever...> handle, net::const_buffers_1 source)
+{
+    return handle.write(source);
+}
+
+template <class...Whatever, class BufferSequence>
+std::size_t
+dynamic_write(dynamic_buffer_handle<Whatever...> handle, BufferSequence const& sources)
+{
+    auto total = std::size_t(0);
+    for(auto buffer : sources)
+        total += dynamic_write_one(handle, buffer);
+    return total;
+}
+
+
+template<class Buffer, class...Strings>
+void test_write(Buffer&& buf, Strings&&...data)
 {
     using buffer_handle_type = dynamic_buffer_handle<typename std::decay<Buffer>::type >;
 
-    auto mybuf = buffer_handle_type(std::forward<Buffer>(buf));
-
-    mybuf.write(net::buffer(data));
+    dynamic_write(buffer_handle_type(std::forward<Buffer>(buf)),
+        std::array<net::const_buffers_1, sizeof...(Strings)>{{
+                 net::const_buffers_1(net::buffer(data))...
+    }});
 }
 
 int
@@ -131,13 +154,12 @@ run()
               << net::is_dynamic_buffer<string_buffer_v2>::value << '\n';
 
     auto d1 = std::string();
-    test_write(string_buffer_v1(d1), "hello");
+    test_write(string_buffer_v1(d1), std::string("Hello"), std::string(", "), std::string("World!"));
 
     std::cout << "result of v1 write: " << d1 << '\n';
 
     auto d2 = std::string();
-    auto db2 = string_buffer_v2(d2);
-    test_write(db2, "hello");
+    test_write(string_buffer_v2(d2), std::string("Hello"), std::string(", "), std::string("World!"));
 
     std::cout << "result of v2 write: " << d2 << '\n';
 
