@@ -94,6 +94,18 @@ private:
     std::unique_ptr<char, deleter> store_;
 };
 
+struct flat_storage_dynamic_buffer
+    : beast_v2_dynamic_buffer_model<flat_storage>
+{
+    using beast_v2_dynamic_buffer_model::beast_v2_dynamic_buffer_model;
+};
+
+auto dynamic_buffer(flat_storage& storage)
+-> flat_storage_dynamic_buffer
+{
+    return { storage };
+}
+
 
 }
 }

@@ -38,7 +38,7 @@ struct beast_v2_dynamic_buffer_model
 
     void consume(std::size_t n)
     {
-        return storage_.consume(n);
+        return storage_->consume(n);
     }
 
     std::size_t

@@ -72,6 +72,44 @@ TEMPLATE_TEST_CASE("beast v2 storage types", "", make_static, make_flat)
     REQUIRE(output_region.size() == 0);
 }
 
+TEMPLATE_TEST_CASE("beast v2 dynamic buffer types", "", make_static, make_flat)
+{
+    using namespace boost::beast;
+
+    auto storage = TestType()();
+    auto dyn_buf = dynamic_buffer(storage);
+
+    CHECK(dyn_buf.data().size() == 0);
+    CHECK(dyn_buf.max_capacity() == TestType::max_capacity);
+
+    auto insert_region = dyn_buf.prepare_input(10);
+    CHECK(insert_region.size() == 10);
+    net::buffer_copy(insert_region, net::buffer(std::string("0123456789")));
+    dyn_buf.dispose_input(1);
+    auto output_region = dyn_buf.data();
+    REQUIRE(output_region.size() == 9);
+    REQUIRE(string_view(reinterpret_cast<const char*>(output_region.data()), output_region.size()) == "012345678");
+
+    insert_region = dyn_buf.prepare_input(7);
+    CHECK(insert_region.size() == 7);
+    net::buffer_copy(insert_region, net::buffer(std::string("9abcdef")));
+    dyn_buf.dispose_input(0);
+    output_region = dyn_buf.data();
+    REQUIRE(output_region.size() == 16);
+    REQUIRE(string_view(reinterpret_cast<const char*>(output_region.data()), output_region.size()) == "0123456789abcdef");
+
+    REQUIRE_THROWS_AS(dyn_buf.prepare_input(1), std::length_error);
+
+    dyn_buf.consume(10);
+    output_region = dyn_buf.data();
+    REQUIRE(output_region.size() == 6);
+    REQUIRE(string_view(reinterpret_cast<const char*>(output_region.data()), output_region.size()) == "abcdef");
+
+    dyn_buf.consume(10);
+    output_region = dyn_buf.data();
+    REQUIRE(output_region.size() == 0);
+}
+
 
 int
 main(

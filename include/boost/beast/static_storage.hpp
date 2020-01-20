@@ -72,14 +72,21 @@ struct static_storage_dynamic_buffer;
 
 template<std::size_t Capacity>
 struct static_storage_dynamic_buffer<std::integral_constant<std::size_t, Capacity>>
-: beast_v2_dynamic_buffer_model<static_storage_dynamic_buffer<std::integral_constant<std::size_t, Capacity>>>
+: beast_v2_dynamic_buffer_model<static_storage<Capacity>>
 {
-    using base_class = beast_v2_dynamic_buffer_model<static_storage_dynamic_buffer<std::integral_constant<std::size_t, Capacity>>>;
-    using storage_type = typename base_class::storage_type;
+    using base_class = beast_v2_dynamic_buffer_model<static_storage<Capacity>>;
 
     using base_class::base_class;
 
 };
+
+template<std::size_t Capacity>
+auto dynamic_buffer(static_storage<Capacity>& storage)
+-> static_storage_dynamic_buffer<std::integral_constant<std::size_t, Capacity>>
+{
+    return { storage };
+}
+
 
 }
 }
