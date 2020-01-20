@@ -41,12 +41,6 @@ struct beast_v2_dynamic_buffer_model
         return storage_->consume(n);
     }
 
-    std::size_t
-    max_capacity() const
-    {
-        return storage_->max_capacity();
-    }
-
 public:
 
     beast_v2_dynamic_buffer_model(storage_type & storage)

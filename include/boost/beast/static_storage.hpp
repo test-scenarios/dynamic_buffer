@@ -48,14 +48,6 @@ struct static_storage
         return const_buffers_type (store_, size_);
     }
 
-    constexpr static
-    std::size_t
-    max_capacity()
-    {
-        return Capacity;
-    }
-
-
 // constructors
 public:
     static_storage()
@@ -63,6 +55,13 @@ public:
     {}
 
 private:
+    constexpr static
+    std::size_t
+    max_capacity()
+    {
+        return Capacity;
+    }
+
     std::size_t size_;
     char store_[Capacity];
 };

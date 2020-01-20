@@ -62,12 +62,6 @@ struct flat_storage
         return const_buffers_type(store_.get(), size_);
     }
 
-    std::size_t
-    max_capacity() const
-    {
-        return max_capacity_;
-    }
-
 // constructors
 public:
     flat_storage(std::size_t limit = std::numeric_limits<std::size_t>::max())
@@ -78,6 +72,13 @@ public:
     {}
 
 private:
+
+    std::size_t
+    max_capacity() const
+    {
+        return max_capacity_;
+    }
+
     std::size_t size_;
     std::size_t capacity_;
     std::size_t max_capacity_;

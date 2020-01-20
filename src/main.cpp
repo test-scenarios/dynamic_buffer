@@ -42,7 +42,6 @@ TEMPLATE_TEST_CASE("beast v2 storage types", "", make_static, make_flat)
     auto storage = TestType()();
 
     CHECK(storage.data().size() == 0);
-    CHECK(storage.max_capacity() == TestType::max_capacity);
 
     auto insert_region = storage.prepare_input(10);
     CHECK(insert_region.size() == 10);
@@ -78,9 +77,7 @@ TEMPLATE_TEST_CASE("beast v2 dynamic buffer types", "", make_static, make_flat)
 
     auto storage = TestType()();
     auto dyn_buf = dynamic_buffer(storage);
-
     CHECK(dyn_buf.data().size() == 0);
-    CHECK(dyn_buf.max_capacity() == TestType::max_capacity);
 
     auto insert_region = dyn_buf.prepare_input(10);
     CHECK(insert_region.size() == 10);
