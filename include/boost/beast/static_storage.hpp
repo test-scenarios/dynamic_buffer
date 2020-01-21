@@ -50,6 +50,12 @@ struct static_storage
         return const_buffers_type(store_, size_);
     }
 
+    mutable_buffers_type
+    data()
+    {
+        return mutable_buffers_type(store_, size_);
+    }
+
     constexpr static
     std::size_t
     max_size()

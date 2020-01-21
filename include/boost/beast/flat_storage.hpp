@@ -60,6 +60,12 @@ struct flat_storage
         return const_buffers_type(store_.get(), size_);
     }
 
+    mutable_buffers_type
+    data()
+    {
+        return mutable_buffers_type(store_.get(), size_);
+    }
+
     std::size_t
     max_size() const
     {

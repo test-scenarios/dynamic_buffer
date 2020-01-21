@@ -34,7 +34,7 @@ struct beast_v2_dynamic_buffer_model
     const_buffers_type
     data() const
     {
-        return storage_->data();
+        return static_cast<storage_type const*>(storage_)->data();
     }
 
     void

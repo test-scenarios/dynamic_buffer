@@ -108,6 +108,15 @@ struct circular_storage
         return result;
     }
 
+    mutable_buffers_type
+    data()
+    {
+        auto result = size_
+                      ? region(output_start_, input_end_)
+                      : mutable_buffers_type();
+        return result;
+    }
+
     std::size_t
     max_size() const
     {
