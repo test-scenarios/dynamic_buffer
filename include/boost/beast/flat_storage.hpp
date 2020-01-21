@@ -7,8 +7,6 @@ namespace boost {
 namespace beast {
 
 /// Opaque storage type for resizable buffer storage in layout of contiguous bytes
-struct flat_storage;
-
 struct flat_storage
 {
 // interface
