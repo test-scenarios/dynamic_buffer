@@ -69,7 +69,7 @@ struct circular_storage
     using const_buffers_type = const_upto2_buffers;
 
     mutable_buffers_type
-    prepare_input(std::size_t n)
+    prepare(std::size_t n)
     {
         if (n > (capacity_ - size_))
         {
@@ -108,6 +108,12 @@ struct circular_storage
         return result;
     }
 
+    std::size_t
+    max_size() const
+    {
+        return capacity_;
+    }
+
 // constructors
 public:
     circular_storage(std::size_t limit)
@@ -127,7 +133,7 @@ private:
         pointer from,
         pointer to)
     {
-        if (to < from)
+        if (to <= from)
         {
             return mutable_buffers_type(
                 asio::mutable_buffer(from, std::distance(from, end_store())),
@@ -236,7 +242,7 @@ struct circular_storage_dynamic_buffer
     using beast_v2_dynamic_buffer_model::beast_v2_dynamic_buffer_model;
 };
 
-auto
+inline auto
 dynamic_buffer(circular_storage &storage)
 -> circular_storage_dynamic_buffer
 {

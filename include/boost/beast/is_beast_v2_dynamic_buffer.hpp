@@ -6,7 +6,7 @@
 namespace boost {
 namespace beast {
 
-template<class T>
+template<class T, class = void>
 struct is_beast_v2_dynamic_buffer
     : std::false_type
 {
@@ -20,9 +20,9 @@ struct beast_v2_dynamic_buffer_model
     using storage_type = Storage;
 
     auto
-    prepare_input(std::size_t n) -> mutable_buffers_type
+    prepare(std::size_t n) -> mutable_buffers_type
     {
-        return storage_->prepare_input(n);
+        return storage_->prepare(n);
     }
 
     void
@@ -31,20 +31,34 @@ struct beast_v2_dynamic_buffer_model
         return storage_->dispose_input(n);
     }
 
-    const_buffers_type data() const
+    const_buffers_type
+    data() const
     {
         return storage_->data();
     }
 
-    void consume(std::size_t n)
+    void
+    consume(std::size_t n)
     {
         return storage_->consume(n);
     }
 
+    std::size_t
+    size() const
+    {
+        return net::buffer_size(storage_->data());
+    }
+
+    std::size_t
+    max_size() const
+    {
+        return storage_->max_size();
+    }
+
 public:
 
-    beast_v2_dynamic_buffer_model(storage_type & storage)
-    : storage_(std::addressof(storage))
+    beast_v2_dynamic_buffer_model(storage_type &storage)
+        : storage_(std::addressof(storage))
     {}
 
 private:
@@ -52,11 +66,33 @@ private:
     storage_type *storage_;
 };
 
-template<class Storage>
-struct is_beast_v2_dynamic_buffer<beast_v2_dynamic_buffer_model<Storage>>
+template<class T, class...Types>
+constexpr std::true_type
+check_is_beast_v2_dynamic_buffer_model(beast_v2_dynamic_buffer_model<Types...> &&)
+{ return {}; }
+
+template<class T>
+constexpr std::false_type
+check_is_beast_v2_dynamic_buffer_model(...)
+{ return {}; }
+
+template<typename T>
+using is_beast_v2_dynamic_buffer_model = decltype(check_is_beast_v2_dynamic_buffer_model<T>(std::declval<T>()));
+
+template<class Derived>
+struct is_beast_v2_dynamic_buffer<Derived, typename std::enable_if<is_beast_v2_dynamic_buffer_model<Derived>::value>::type>
     : std::true_type
 {
 };
+
+
+//template<class Storage>
+//struct is_beast_v2_dynamic_buffer<beast_v2_dynamic_buffer_model<Storage>>
+//    : std::true_type
+//{
+//};
+
+
 
 }
 }

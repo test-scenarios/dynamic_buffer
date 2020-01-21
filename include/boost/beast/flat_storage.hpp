@@ -14,12 +14,12 @@ struct flat_storage
     using const_buffers_type = net::const_buffer;
 
     mutable_buffers_type
-    prepare_input(std::size_t n)
+    prepare(std::size_t n)
     {
         if (capacity_ - size_ < n)
         {
             auto new_cap = size_ + n;
-            if (new_cap > max_capacity_)
+            if (new_cap > max_size_)
                 boost::throw_exception(std::length_error("out of space"));
 
             auto oldp = store_.release();
@@ -60,26 +60,27 @@ struct flat_storage
         return const_buffers_type(store_.get(), size_);
     }
 
+    std::size_t
+    max_size() const
+    {
+        return max_size_;
+    }
+
 // constructors
 public:
     flat_storage(std::size_t limit = std::numeric_limits<std::size_t>::max())
         : size_(0)
         , capacity_(0)
-        , max_capacity_(limit)
+        , max_size_(limit)
         , store_(nullptr)
     {}
 
 private:
 
-    std::size_t
-    max_capacity() const
-    {
-        return max_capacity_;
-    }
 
     std::size_t size_;
     std::size_t capacity_;
-    std::size_t max_capacity_;
+    std::size_t max_size_;
 
     struct deleter
     {
@@ -99,10 +100,11 @@ struct flat_storage_dynamic_buffer
     using beast_v2_dynamic_buffer_model::beast_v2_dynamic_buffer_model;
 };
 
-auto dynamic_buffer(flat_storage& storage)
+inline auto
+dynamic_buffer(flat_storage &storage)
 -> flat_storage_dynamic_buffer
 {
-    return { storage };
+    return {storage};
 }
 
 

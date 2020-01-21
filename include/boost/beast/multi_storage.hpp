@@ -16,7 +16,7 @@ struct multi_storage
     using const_buffers_type = store_type::const_buffers_type;
 
     mutable_buffers_type
-    prepare_input(std::size_t n)
+    prepare(std::size_t n)
     {
         auto result = store_.prepare(n);
         prepared_ += n;
@@ -46,6 +46,12 @@ struct multi_storage
         return store_.data();
     }
 
+    std::size_t
+    max_size() const
+    {
+        return store_.max_size();
+    }
+
 public:
 
     multi_storage()
@@ -67,7 +73,7 @@ struct multi_storage_dynamic_buffer
     using beast_v2_dynamic_buffer_model::beast_v2_dynamic_buffer_model;
 };
 
-auto
+inline auto
 dynamic_buffer(multi_storage &storage)
 -> multi_storage_dynamic_buffer
 {

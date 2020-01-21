@@ -21,16 +21,17 @@ struct static_storage
     using const_buffers_type = net::const_buffer;
 
     auto
-    prepare_input(std::size_t n) -> mutable_buffers_type
+    prepare(std::size_t n) -> mutable_buffers_type
     {
-        if (max_capacity() - size_ < n)
+        if (max_size() - size_ < n)
             boost::throw_exception(std::length_error("out of space"));
         auto result = mutable_buffers_type(store_ + size_, n);
         size_ += n;
         return result;
     }
 
-    void consume(std::size_t n)
+    void
+    consume(std::size_t n)
     {
         n = std::min(n, size_);
         std::memcpy(store_, store_ + n, size_ - n);
@@ -43,9 +44,17 @@ struct static_storage
         size_ -= std::min(n, size_);
     }
 
-    const_buffers_type data() const
+    const_buffers_type
+    data() const
     {
-        return const_buffers_type (store_, size_);
+        return const_buffers_type(store_, size_);
+    }
+
+    constexpr static
+    std::size_t
+    max_size()
+    {
+        return Capacity;
     }
 
 // constructors
@@ -55,12 +64,6 @@ public:
     {}
 
 private:
-    constexpr static
-    std::size_t
-    max_capacity()
-    {
-        return Capacity;
-    }
 
     std::size_t size_;
     char store_[Capacity];
@@ -71,7 +74,7 @@ struct static_storage_dynamic_buffer;
 
 template<std::size_t Capacity>
 struct static_storage_dynamic_buffer<std::integral_constant<std::size_t, Capacity>>
-: beast_v2_dynamic_buffer_model<static_storage<Capacity>>
+    : beast_v2_dynamic_buffer_model<static_storage<Capacity>>
 {
     using base_class = beast_v2_dynamic_buffer_model<static_storage<Capacity>>;
 
@@ -80,10 +83,11 @@ struct static_storage_dynamic_buffer<std::integral_constant<std::size_t, Capacit
 };
 
 template<std::size_t Capacity>
-auto dynamic_buffer(static_storage<Capacity>& storage)
+auto
+dynamic_buffer(static_storage<Capacity> &storage)
 -> static_storage_dynamic_buffer<std::integral_constant<std::size_t, Capacity>>
 {
-    return { storage };
+    return {storage};
 }
 
 
