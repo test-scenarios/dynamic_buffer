@@ -13,6 +13,7 @@
 //#include <boost/beast/circular_storage.hpp>
 #endif
 #include <boost/beast/static_storage.hpp>
+#include <boost/beast/multi_buffer_dynamic_proxy.hpp>
 
 namespace project_test {
 
@@ -190,6 +191,21 @@ struct make_static
     }
 };
 
+struct make_beast_multi_buffer
+{
+    enum
+        : std::size_t
+    {
+        max_capacity = 64
+    };
+
+    auto
+    operator()() const -> boost::beast::multi_buffer
+    {
+        return boost::beast::multi_buffer(max_capacity);
+    }
+};
+
 #if !NO_FLAT_STORAGE
 struct make_flat
 {
@@ -244,6 +260,8 @@ struct make_multi
 
 using test_list = std::tuple<
     project_test::make_static
+    , project_test::make_beast_multi_buffer
+//    , project_test::make_beast_multi_buffer
 #if !NO_FLAT_STORAGE
     , project_test::make_flat
 #endif
@@ -283,6 +301,7 @@ TEMPLATE_LIST_TEST_CASE("read_write", "", test_list)
 
     auto storage = TestType()();
     auto dyn_buf = dynamic_buffer(storage);
+    static_assert(net::is_dynamic_buffer_v2<decltype(dyn_buf)>::value, "");
 
     auto expected_error = error_code();
     auto expected_data = std::string("1 the cat sat on the mat\r\n");
@@ -293,54 +312,47 @@ TEMPLATE_LIST_TEST_CASE("read_write", "", test_list)
         CHECK(ec.category().name() == expected_error.category().name());
         CHECK(ec.message() == expected_error.message());
 
-        if (ec)
-        {
-            CHECK(bytes_transferred == 0);
-            CHECK(buffers_to_string(dyn_buf.data(0, bytes_transferred)).empty());
-        }
-        else
-        {
-            CHECK(bytes_transferred == expected_data.size());
-            CHECK(buffers_to_string(dyn_buf.data(0, bytes_transferred)) == expected_data);
-        }
+        CHECK(bytes_transferred == expected_data.size());
+        CHECK(buffers_to_string(dyn_buf.data(0, bytes_transferred)) == expected_data);
 
         dyn_buf.consume(bytes_transferred);
     };
+    auto crlf = std::string("\r\n");
 
-    net::async_read_until(client_stream, dyn_buf, "\r\n", handler);
+    net::async_read_until(client_stream, dyn_buf, crlf, handler);
     test_run();
 
     expected_data = std::string("2 the cat sat on the mat\r\n");
-    net::async_read_until(client_stream, dyn_buf, "\r\n", handler);
+    net::async_read_until(client_stream, dyn_buf, crlf, handler);
     test_run();
 
     expected_data = std::string("3 the cat sat on the mat\r\n");
-    net::async_read_until(client_stream, dyn_buf, "\r\n", handler);
+    net::async_read_until(client_stream, dyn_buf, crlf, handler);
     test_run();
 
     expected_data = std::string("4 the cat sat on the mat\r\n");
-    net::async_read_until(client_stream, dyn_buf, "\r\n", handler);
+    net::async_read_until(client_stream, dyn_buf, crlf, handler);
     test_run();
 
     expected_data = std::string("5 the cat sat on the mat\r\n");
-    net::async_read_until(client_stream, dyn_buf, "\r\n", handler);
+    net::async_read_until(client_stream, dyn_buf, crlf, handler);
     test_run();
 
     expected_data = std::string("6 the cat sat on the mat\r\n");
-    net::async_read_until(client_stream, dyn_buf, "\r\n", handler);
+    net::async_read_until(client_stream, dyn_buf, crlf, handler);
     test_run();
 
     expected_data = std::string("7 the cat sat on the mat\r\n");
-    net::async_read_until(client_stream, dyn_buf, "\r\n", handler);
+    net::async_read_until(client_stream, dyn_buf, crlf, handler);
     test_run();
 
     expected_data = std::string("8 the cat sat on the mat\r\n");
-    net::async_read_until(client_stream, dyn_buf, "\r\n", handler);
+    net::async_read_until(client_stream, dyn_buf, crlf, handler);
     test_run();
 
-    expected_data = std::string("9 the cat gave up");
+    expected_data = std::string();
     expected_error = net::error::eof;
-    net::async_read_until(client_stream, dyn_buf, "\r\n", handler);
+    net::async_read_until(client_stream, dyn_buf, crlf, handler);
     test_run();
 
 

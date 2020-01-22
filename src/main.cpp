@@ -14,6 +14,7 @@
 //#include <boost/beast/circular_storage.hpp>
 #endif
 #include <boost/beast/static_storage.hpp>
+#include <boost/beast/multi_buffer_dynamic_proxy.hpp>
 
 #define CATCH_CONFIG_RUNNER
 
@@ -85,8 +86,25 @@ struct make_multi
 };
 #endif
 
+struct make_beast_multi_buffer
+{
+    enum
+        : std::size_t
+    {
+        max_capacity = 16
+    };
+
+    auto
+    operator()() const -> boost::beast::multi_buffer
+    {
+        return boost::beast::multi_buffer(max_capacity);
+    }
+};
+
+
 using test_list = std::tuple<
     make_static
+    , make_beast_multi_buffer
 #if !NO_FLAT_STORAGE
     , make_flat
 #endif
@@ -105,7 +123,6 @@ TEMPLATE_LIST_TEST_CASE("beast v2 storage types", "", test_list)
     auto storage = TestType()();
 
     REQUIRE(net::is_dynamic_buffer_v2<decltype(storage)>::value == false);
-    REQUIRE(net::is_dynamic_buffer<decltype(storage)>::value == false);
 }
 
 TEMPLATE_LIST_TEST_CASE("beast v2 dynamic buffer types", "", test_list)
