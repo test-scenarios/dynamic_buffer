@@ -4,9 +4,15 @@
 #include <iostream>
 #include <boost/type_index.hpp>
 
+#if !NO_FLAT_STORAGE
 #include <boost/beast/flat_storage.hpp>
+#endif
+#if !NO_MULTI_STORAGE
 #include <boost/beast/multi_storage.hpp>
-#include <boost/beast/circular_storage.hpp>
+#endif
+#if !NO_CIRCULAR_STORAGE
+//#include <boost/beast/circular_storage.hpp>
+#endif
 #include <boost/beast/static_storage.hpp>
 
 #define CATCH_CONFIG_RUNNER
@@ -28,6 +34,7 @@ struct make_static
     }
 };
 
+#if !NO_FLAT_STORAGE
 struct make_flat
 {
     enum
@@ -42,7 +49,9 @@ struct make_flat
         return boost::beast::flat_storage(max_capacity);
     }
 };
+#endif
 
+#if !NO_CIRCULAR_STORAGE
 struct make_circular
 {
     enum
@@ -57,7 +66,9 @@ struct make_circular
         return boost::beast::circular_storage(max_capacity);
     }
 };
+#endif
 
+#if !NO_MULTI_STORAGE
 struct make_multi
 {
     enum
@@ -72,77 +83,73 @@ struct make_multi
         return boost::beast::multi_storage(max_capacity);
     }
 };
+#endif
 
-TEMPLATE_TEST_CASE("beast v2 storage types", "", make_static, make_flat, make_circular, make_multi)
+using test_list = std::tuple<
+    make_static
+#if !NO_FLAT_STORAGE
+    , make_flat
+#endif
+#if !NO_CIRCULAR_STORAGE
+    , make_circular
+#endif
+#if !NO_MULTI_STORAGE
+    , make_multi
+#endif
+    >;
+
+TEMPLATE_LIST_TEST_CASE("beast v2 storage types", "", test_list)
 {
     using namespace boost::beast;
 
     auto storage = TestType()();
 
-    CHECK(net::buffer_size(storage.data()) == 0);
-
-    auto insert_region = storage.prepare(10);
-    CHECK(net::buffer_size(insert_region) == 10);
-    net::buffer_copy(insert_region, net::buffer(std::string("0123456789")));
-    storage.dispose_input(1);
-    auto output_region = storage.data();
-    REQUIRE(net::buffer_size(output_region) == 9);
-    REQUIRE(buffers_to_string(output_region) == "012345678");
-
-    insert_region = storage.prepare(7);
-    CHECK(net::buffer_size(insert_region) == 7);
-    net::buffer_copy(insert_region, net::buffer(std::string("9abcdef")));
-    storage.dispose_input(0);
-    output_region = storage.data();
-    REQUIRE(net::buffer_size(output_region) == 16);
-    REQUIRE(buffers_to_string(output_region) == "0123456789abcdef");
-
-    REQUIRE_THROWS_AS(storage.prepare(1), std::length_error);
-
-    storage.consume(10);
-    output_region = storage.data();
-    REQUIRE(net::buffer_size(output_region) == 6);
-    REQUIRE(buffers_to_string(output_region) == "abcdef");
-
-    storage.consume(10);
-    output_region = storage.data();
-    REQUIRE(net::buffer_size(output_region) == 0);
+    REQUIRE(net::is_dynamic_buffer_v2<decltype(storage)>::value == false);
+    REQUIRE(net::is_dynamic_buffer<decltype(storage)>::value == false);
 }
 
-TEMPLATE_TEST_CASE("beast v2 dynamic buffer types", "", make_static, make_flat, make_circular, make_multi)
+TEMPLATE_LIST_TEST_CASE("beast v2 dynamic buffer types", "", test_list)
 {
     using namespace boost::beast;
 
     auto storage = TestType()();
     auto dyn_buf = dynamic_buffer(storage);
-    CHECK(dyn_buf.size() <= dyn_buf.max_size());
-    CHECK(net::buffer_size(dyn_buf.data()) == 0);
+    CHECK(dyn_buf.size() < dyn_buf.max_size());
+    CHECK(dyn_buf.size() == 0);
+    CHECK(net::buffer_size(dyn_buf.data(0, dyn_buf.size())) == 0);
 
-    auto insert_region = dyn_buf.prepare(10);
-    CHECK(net::buffer_size(insert_region) == 10);
-    net::buffer_copy(insert_region, net::buffer(std::string("0123456789")));
-    dyn_buf.dispose_input(1);
-    auto output_region = dyn_buf.data();
+    auto do_insert = [&dyn_buf](net::const_buffer source)
+    {
+        auto start = dyn_buf.size();
+        auto len = source.size();
+        dyn_buf.grow(len);
+        auto insert_region = dyn_buf.data(start, len);
+        CHECK(net::buffer_size(insert_region) == len);
+        auto copied = net::buffer_copy(insert_region, source);
+        CHECK(copied == len);
+    };
+
+    do_insert(net::buffer(std::string("0123456789")));
+    dyn_buf.shrink(1);
+    auto output_region = dyn_buf.data(0, dyn_buf.size());
     REQUIRE(net::buffer_size(output_region) == 9);
     REQUIRE(buffers_to_string(output_region) == "012345678");
 
-    insert_region = dyn_buf.prepare(7);
-    CHECK(net::buffer_size(insert_region) == 7);
-    net::buffer_copy(insert_region, net::buffer(std::string("9abcdef")));
-    dyn_buf.dispose_input(0);
-    output_region = dyn_buf.data();
+    do_insert(net::buffer(std::string("9abcdef")));
+    dyn_buf.shrink(0);
+    output_region = dyn_buf.data(0, dyn_buf.size());
     REQUIRE(net::buffer_size(output_region) == 16);
     REQUIRE(buffers_to_string(output_region) == "0123456789abcdef");
 
-    REQUIRE_THROWS_AS(dyn_buf.prepare(1), std::length_error);
+    REQUIRE_THROWS_AS(dyn_buf.grow(1), std::length_error);
 
     dyn_buf.consume(10);
-    output_region = dyn_buf.data();
+    output_region = dyn_buf.data(0, dyn_buf.size());
     REQUIRE(net::buffer_size(output_region) == 6);
     REQUIRE(buffers_to_string(output_region) == "abcdef");
 
     dyn_buf.consume(10);
-    output_region = dyn_buf.data();
+    output_region = dyn_buf.data(0, dyn_buf.size());
     REQUIRE(net::buffer_size(output_region) == 0);
 }
 

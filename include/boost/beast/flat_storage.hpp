@@ -55,15 +55,21 @@ struct flat_storage
     }
 
     const_buffers_type
-    data() const
+    data(std::size_t pos, std::size_t n) const
     {
-        return const_buffers_type(store_.get(), size_);
+        BOOST_ASSERT(pos < size_);
+        BOOST_ASSERT(n < size_ - pos);
+
+        return const_buffers_type(store_.get(), n);
     }
 
     mutable_buffers_type
-    data()
+    data(std::size_t pos, std::size_t n)
     {
-        return mutable_buffers_type(store_.get(), size_);
+        BOOST_ASSERT(pos < size_);
+        BOOST_ASSERT(n < size_ - pos);
+
+        return mutable_buffers_type(store_.get(), n);
     }
 
     std::size_t

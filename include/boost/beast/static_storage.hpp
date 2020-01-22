@@ -1,33 +1,80 @@
 #pragma once
 
 #include <boost/beast/core/detail/config.hpp>
-#include <boost/beast/is_beast_v2_dynamic_buffer.hpp>
+#include <boost/beast/beast_v2_dynamic_buffer_model.hpp>
 
 namespace boost {
 namespace beast {
 
 /// Opaque storage type for non-extentable buffer storage in layout of contiguous bytes
 template<std::size_t Capacity>
-struct static_storage;
+class static_storage;
 
 template<class IntegralCapacity>
 struct static_storage_dynamic_buffer;
 
 template<std::size_t Capacity>
-struct static_storage
+class static_storage
 {
-// interface
+    std::size_t size_;
+    char store_[Capacity];
+
+    using this_class = static_storage<Capacity>;
+
+private:
+    // internal dynamic buffer interface
     using mutable_buffers_type = net::mutable_buffer;
     using const_buffers_type = net::const_buffer;
 
-    auto
-    prepare(std::size_t n) -> mutable_buffers_type
+    std::size_t
+    size() const
+    {
+        return size_;
+    }
+
+    constexpr static
+    std::size_t
+    max_size()
+    {
+        return Capacity;
+    }
+
+    constexpr static
+    std::size_t
+    capacity()
+    {
+        return Capacity;
+    }
+
+    const_buffers_type
+    data(std::size_t pos, std::size_t n) const
+    {
+        BOOST_ASSERT(pos < size() || n == 0);
+        BOOST_ASSERT(n + pos <= size());
+        return const_buffers_type(store_ + pos, n);
+    }
+
+    mutable_buffers_type
+    data(std::size_t pos, std::size_t n)
+    {
+        BOOST_ASSERT(pos < size() || n == 0);
+        BOOST_ASSERT(n + pos <= size());
+        return mutable_buffers_type(store_ + pos, n);
+    }
+
+    void
+    grow(std::size_t n)
     {
         if (max_size() - size_ < n)
-            boost::throw_exception(std::length_error("out of space"));
-        auto result = mutable_buffers_type(store_ + size_, n);
+            boost::throw_exception(std::length_error("prepare"));
+
         size_ += n;
-        return result;
+    }
+
+    void
+    shrink(std::size_t n)
+    {
+        size_ -= std::min(n, size_);
     }
 
     void
@@ -38,41 +85,13 @@ struct static_storage
         size_ -= n;
     }
 
-    void
-    dispose_input(std::size_t n)
-    {
-        size_ -= std::min(n, size_);
-    }
-
-    const_buffers_type
-    data() const
-    {
-        return const_buffers_type(store_, size_);
-    }
-
-    mutable_buffers_type
-    data()
-    {
-        return mutable_buffers_type(store_, size_);
-    }
-
-    constexpr static
-    std::size_t
-    max_size()
-    {
-        return Capacity;
-    }
+    friend beast_v2_dynamic_buffer_model<this_class>;
 
 // constructors
 public:
     static_storage()
         : size_(0)
     {}
-
-private:
-
-    std::size_t size_;
-    char store_[Capacity];
 };
 
 template<class Storage>
@@ -85,7 +104,6 @@ struct static_storage_dynamic_buffer<std::integral_constant<std::size_t, Capacit
     using base_class = beast_v2_dynamic_buffer_model<static_storage<Capacity>>;
 
     using base_class::base_class;
-
 };
 
 template<std::size_t Capacity>
